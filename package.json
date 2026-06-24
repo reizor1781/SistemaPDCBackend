@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "node node_modules/typescript/bin/tsc",
     "start": "node dist/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
-    "db:push": "prisma db push --skip-generate",
-    "db:seed": "tsx prisma/seed.ts"
+    "prisma:generate": "node node_modules/prisma/build/index.js generate",
+    "prisma:migrate": "node node_modules/prisma/build/index.js migrate dev",
+    "prisma:studio": "node node_modules/prisma/build/index.js studio",
+    "db:push": "node node_modules/prisma/build/index.js db push --skip-generate",
+    "db:seed": "node --import tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
