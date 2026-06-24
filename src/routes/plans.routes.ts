@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deletePlan, getPlan, listPlans, updatePlan, uploadPlan } from '../controllers/plans.controller.js';
+import { deletePlan, getPlan, listPlans, updatePlan, uploadPlan, addComment, resolveComment, deleteComment } from '../controllers/plans.controller.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { pdfUpload } from '../middleware/upload.js';
 
@@ -16,3 +16,8 @@ planRouter.post(
 );
 planRouter.put('/:id', requireAuth, requireRole('admin', 'engineer'), updatePlan);
 planRouter.delete('/:id', requireAuth, requireRole('admin', 'engineer'), deletePlan);
+
+// Comentarios
+planRouter.post('/:id/comments', requireAuth, addComment);
+planRouter.patch('/:id/comments/:commentId/resolve', requireAuth, resolveComment);
+planRouter.delete('/:id/comments/:commentId', requireAuth, deleteComment);

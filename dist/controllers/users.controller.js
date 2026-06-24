@@ -1,65 +1,43 @@
-import bcrypt from 'bcryptjs';
-import { demoUsers } from '../data/mockData.js';
-const users = demoUsers;
-const roles = ['admin', 'engineer', 'technician', 'operator'];
-const toSafeUser = ({ passwordHash, ...user }) => user;
-export function listUsers(_req, res) {
-    const data = users.map(toSafeUser);
-    res.json({ data });
+import { UserService } from '../services/user.service.js';
+export async function listUsers(_req, res, next) {
+    try {
+        const data = await UserService.findAll();
+        res.json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
 }
-export function createUser(req, res) {
-    const { name, email, role, department, active, password } = req.body;
-    if (!name || !email || !role) {
-        return res.status(400).json({ error: 'Name, email and role are required' });
+export async function createUser(req, res, next) {
+    try {
+        const dto = req.body;
+        if (req.file)
+            dto.avatar = `/uploads/${req.file.filename}`;
+        const data = await UserService.create(dto);
+        res.status(201).json({ data });
     }
-    if (!roles.includes(role)) {
-        return res.status(400).json({ error: 'Invalid role' });
+    catch (err) {
+        next(err);
     }
-    if (users.some(user => user.email.toLowerCase() === email.toLowerCase())) {
-        return res.status(409).json({ error: 'User email already exists' });
-    }
-    const user = {
-        id: `u-${Date.now()}`,
-        name,
-        email,
-        role,
-        department: department ?? '',
-        active: active ?? true,
-        passwordHash: bcrypt.hashSync(password || 'usuario123', 10),
-    };
-    users.push(user);
-    return res.status(201).json({ data: toSafeUser(user) });
 }
-export function updateUser(req, res) {
-    const index = users.findIndex(user => user.id === req.params.id);
-    if (index === -1)
-        return res.status(404).json({ error: 'User not found' });
-    const { name, email, role, department, active, password } = req.body;
-    if (role && !roles.includes(role)) {
-        return res.status(400).json({ error: 'Invalid role' });
+export async function updateUser(req, res, next) {
+    try {
+        const dto = req.body;
+        if (req.file)
+            dto.avatar = `/uploads/${req.file.filename}`;
+        const data = await UserService.update(req.params['id'], dto);
+        res.json({ data });
     }
-    if (email && users.some(user => user.id !== req.params.id && user.email.toLowerCase() === email.toLowerCase())) {
-        return res.status(409).json({ error: 'User email already exists' });
+    catch (err) {
+        next(err);
     }
-    const updated = {
-        ...users[index],
-        name: name ?? users[index].name,
-        email: email ?? users[index].email,
-        role: role ?? users[index].role,
-        department: department ?? users[index].department,
-        active: active ?? users[index].active,
-        passwordHash: password ? bcrypt.hashSync(password, 10) : users[index].passwordHash,
-    };
-    users[index] = updated;
-    return res.json({ data: toSafeUser(updated) });
 }
-export function deleteUser(req, res) {
-    if (req.user?.id === req.params.id) {
-        return res.status(400).json({ error: 'You cannot delete your own user' });
+export async function deleteUser(req, res, next) {
+    try {
+        const data = await UserService.remove(req.params['id'], req.user?.id);
+        res.json({ data });
     }
-    const index = users.findIndex(user => user.id === req.params.id);
-    if (index === -1)
-        return res.status(404).json({ error: 'User not found' });
-    const [deleted] = users.splice(index, 1);
-    return res.json({ data: toSafeUser(deleted) });
+    catch (err) {
+        next(err);
+    }
 }

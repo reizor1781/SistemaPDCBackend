@@ -22,7 +22,15 @@ export interface CreateUserDto {
   department?: string;
   active?: boolean;
   password?: string;
+  avatar?: string;
 }
 
 /** DTO para actualizar un usuario */
 export type UpdateUserDto = Partial<CreateUserDto>;
+
+/** DTO para actualizar el propio perfil */
+export interface UpdateProfileDto {
+  name?: string;
+  password?: string;
+  avatar?: string;
+}

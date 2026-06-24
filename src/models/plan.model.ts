@@ -24,6 +24,18 @@ export interface PlanRevision {
   createdAt: string;
 }
 
+/** Comentario en un plano */
+export interface PlanComment {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_role?: string;
+  content: string;
+  resolved: boolean;
+  page_ref?: number;
+  date: string;
+}
+
 /** Entidad principal de dominio — Plano eléctrico */
 export interface ElectricalPlan {
   id: string;
@@ -42,7 +54,7 @@ export interface ElectricalPlan {
   tags: string[];
   description?: string;
   revisions: PlanRevision[];
-  comments: unknown[];
+  comments: PlanComment[];
   created_date: string;
   updated_date: string;
 }

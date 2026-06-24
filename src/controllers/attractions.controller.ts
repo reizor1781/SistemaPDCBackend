@@ -12,47 +12,47 @@ import { CreateAttractionDto, UpdateAttractionDto } from '../models/attraction.m
  * - Propaga errores al middleware global via next(err).
  */
 
-export function listAttractions(_req: Request, res: Response, next: NextFunction) {
+export async function listAttractions(_req: Request, res: Response, next: NextFunction) {
   try {
-    const data = AttractionService.findAll();
+    const data = await AttractionService.findAll();
     res.json({ data });
   } catch (err) {
     next(err);
   }
 }
 
-export function getAttraction(req: Request, res: Response, next: NextFunction) {
+export async function getAttraction(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = AttractionService.findById(req.params['id'] as string);
+    const data = await AttractionService.findById(req.params['id'] as string);
     res.json({ data });
   } catch (err) {
     next(err);
   }
 }
 
-export function createAttraction(req: Request, res: Response, next: NextFunction) {
+export async function createAttraction(req: Request, res: Response, next: NextFunction) {
   try {
     const dto = req.body as CreateAttractionDto;
-    const data = AttractionService.create(dto, req.file);
+    const data = await AttractionService.create(dto, req.file);
     res.status(201).json({ data });
   } catch (err) {
     next(err);
   }
 }
 
-export function updateAttraction(req: Request, res: Response, next: NextFunction) {
+export async function updateAttraction(req: Request, res: Response, next: NextFunction) {
   try {
     const dto = req.body as UpdateAttractionDto;
-    const data = AttractionService.update(req.params['id'] as string, dto, req.file);
+    const data = await AttractionService.update(req.params['id'] as string, dto, req.file);
     res.json({ data });
   } catch (err) {
     next(err);
   }
 }
 
-export function deleteAttraction(req: Request, res: Response, next: NextFunction) {
+export async function deleteAttraction(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = AttractionService.remove(req.params['id'] as string);
+    const data = await AttractionService.remove(req.params['id'] as string);
     res.json({ data });
   } catch (err) {
     next(err);

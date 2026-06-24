@@ -21,3 +21,14 @@ export const pdfUpload = multer({
         return cb(null, true);
     },
 });
+export const imageUpload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // Límite de 10MB para imágenes
+    fileFilter: (_req, file, cb) => {
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+            return cb(new Error('Only JPG, PNG and WEBP images are allowed'));
+        }
+        return cb(null, true);
+    },
+});

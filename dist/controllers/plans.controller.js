@@ -1,63 +1,83 @@
-import { demoPlans } from '../data/mockData.js';
-const plans = demoPlans;
-export function listPlans(req, res) {
-    const attractionId = req.query.attraction_id;
-    const data = attractionId
-        ? plans.filter(plan => plan.attraction_id === attractionId)
-        : plans;
-    return res.json({ data });
+import { PlanService } from '../services/plan.service.js';
+/**
+ * Controlador de Planos Eléctricos.
+ *
+ * Responsabilidad única: manejar la capa HTTP.
+ * Toda la lógica de negocio vive en PlanService.
+ */
+export async function listPlans(req, res, next) {
+    try {
+        const attractionId = req.query['attraction_id'];
+        const data = await PlanService.findAll(attractionId);
+        res.json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
 }
-export function getPlan(req, res) {
-    const plan = plans.find(item => item.id === req.params.id);
-    if (!plan)
-        return res.status(404).json({ error: 'Plan not found' });
-    return res.json({ data: plan });
+export async function getPlan(req, res, next) {
+    try {
+        const data = await PlanService.findById(req.params['id']);
+        res.json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
 }
-export function uploadPlan(req, res) {
-    const fileName = req.file?.filename;
-    const now = new Date().toISOString();
-    const plan = {
-        id: `p-${Date.now()}`,
-        attraction_id: req.body.attraction_id,
-        plan_number: req.body.plan_number || `PL-${Date.now()}`,
-        title: req.body.title,
-        type: req.body.type || 'single_line',
-        status: 'draft',
-        current_version: 'Rev. 0',
-        created_date: now,
-        updated_date: now,
-        author: req.user?.email ?? 'Servidor',
-        file_url: fileName ? `/uploads/${fileName}` : '',
-        file_size_kb: req.file ? Math.round(req.file.size / 1024) : 0,
-        pages: 1,
-        revisions: [],
-        comments: [],
-        tags: [],
-        description: req.body.description || '',
-    };
-    plans.unshift(plan);
-    return res.status(201).json({
-        message: 'Plan uploaded',
-        data: plan,
-    });
+export async function uploadPlan(req, res, next) {
+    try {
+        const dto = req.body;
+        const data = await PlanService.create(dto, req.file, req.user);
+        res.status(201).json({ message: 'Plano subido exitosamente', data });
+    }
+    catch (err) {
+        next(err);
+    }
 }
-export function updatePlan(req, res) {
-    const index = plans.findIndex(item => item.id === req.params.id);
-    if (index === -1)
-        return res.status(404).json({ error: 'Plan not found' });
-    const updated = {
-        ...plans[index],
-        ...req.body,
-        id: plans[index].id,
-        updated_date: new Date().toISOString(),
-    };
-    plans[index] = updated;
-    return res.json({ data: updated });
+export async function updatePlan(req, res, next) {
+    try {
+        const dto = req.body;
+        const data = await PlanService.update(req.params['id'], dto);
+        res.json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
 }
-export function deletePlan(req, res) {
-    const index = plans.findIndex(item => item.id === req.params.id);
-    if (index === -1)
-        return res.status(404).json({ error: 'Plan not found' });
-    const [deleted] = plans.splice(index, 1);
-    return res.json({ data: deleted });
+export async function deletePlan(req, res, next) {
+    try {
+        const data = await PlanService.remove(req.params['id']);
+        res.json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
+}
+export async function addComment(req, res, next) {
+    try {
+        const { content, pageRef } = req.body;
+        const data = await PlanService.addComment(req.params['id'], content, req.user, pageRef);
+        res.status(201).json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
+}
+export async function resolveComment(req, res, next) {
+    try {
+        const data = await PlanService.resolveComment(req.params['id'], req.params['commentId']);
+        res.json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
+}
+export async function deleteComment(req, res, next) {
+    try {
+        const data = await PlanService.deleteComment(req.params['id'], req.params['commentId']);
+        res.json({ data });
+    }
+    catch (err) {
+        next(err);
+    }
 }

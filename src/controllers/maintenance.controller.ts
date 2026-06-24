@@ -8,10 +8,10 @@ import { MaintenanceService } from '../services/maintenance.service.js';
  * Toda la lógica vive en MaintenanceService.
  */
 
-export function listMaintenance(req: Request, res: Response, next: NextFunction) {
+export async function listMaintenance(req: Request, res: Response, next: NextFunction) {
   try {
     const attractionId = req.query.attraction_id as string | undefined;
-    const data = MaintenanceService.findAll(attractionId);
+    const data = await MaintenanceService.findAll(attractionId);
     res.json({ data });
   } catch (err) {
     next(err);

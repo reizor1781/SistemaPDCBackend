@@ -36,6 +36,7 @@ export interface CreateAttractionDto {
   capacity?: number;
   height_m?: number;
   duration_min?: number;
+  total_plans?: number;
   last_maintenance?: string;
   next_maintenance?: string;
   technical_specs?: TechnicalSpecs;
@@ -43,5 +44,4 @@ export interface CreateAttractionDto {
 
 /** DTO para actualizar una atracción (todos los campos opcionales) */
 export type UpdateAttractionDto = Partial<CreateAttractionDto>;
-
 

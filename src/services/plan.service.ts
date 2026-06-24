@@ -1,111 +1,176 @@
-import { demoPlans } from '../data/mockData.js';
-import { CreatePlanDto, ElectricalPlan, UpdatePlanDto } from '../models/plan.model.js';
+import { CreatePlanDto, UpdatePlanDto } from '../models/plan.model.js';
 import { AppError } from '../types/errors.js';
 import { AuthUser } from '../types/auth.js';
+import { prisma } from '../lib/prisma.js';
 
-// En memoria hasta que se conecte la BD (Prisma)
-const plans = demoPlans as unknown as ElectricalPlan[];
+function mapPlan(plan: any): any {
+  return {
+    id: plan.id,
+    attraction_id: plan.attractionId,
+    plan_number: plan.planNumber,
+    title: plan.title,
+    type: plan.type,
+    status: plan.status,
+    current_version: plan.currentVersion,
+    author: plan.author?.name || plan.authorId || 'Sistema',
+    file_url: plan.fileUrl,
+    file_size_kb: plan.fileSizeKb,
+    pages: plan.pages,
+    tags: plan.tags,
+    description: plan.description,
+    created_date: plan.createdAt.toISOString(),
+    updated_date: plan.updatedAt.toISOString(),
+    revisions: plan.revisions?.map((rev: any) => ({
+      id: rev.id,
+      version: rev.version,
+      author: rev.author,
+      date: rev.createdAt.toISOString(),
+      description: rev.description,
+      file_url: rev.fileUrl,
+    })) || [],
+    comments: plan.comments?.map((c: any) => ({
+      id: c.id,
+      user_id: c.userId,
+      user_name: c.user?.name || 'Usuario',
+      user_role: c.user?.role || 'operator',
+      content: c.content,
+      date: c.createdAt.toISOString(),
+      resolved: c.resolved,
+      page_ref: c.pageRef,
+    })) || [],
+  };
+}
 
-/**
- * PlanService — lógica de negocio para planos eléctricos.
- */
 export const PlanService = {
-  /**
-   * Lista todos los planos. Filtra por attraction_id si se proporciona.
-   */
-  findAll(attractionId?: string): ElectricalPlan[] {
-    if (attractionId) {
-      return plans.filter(plan => plan.attraction_id === attractionId);
-    }
-    return plans;
+  async findAll(attractionId?: string): Promise<any[]> {
+    const plans = await prisma.electricalPlan.findMany({
+      where: attractionId ? { attractionId } : undefined,
+      include: { author: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return plans.map(mapPlan);
   },
 
-  /**
-   * Obtiene un plano por ID.
-   * @throws {AppError} 404 si no se encuentra
-   */
-  findById(id: string): ElectricalPlan {
-    const plan = plans.find(item => item.id === id);
+  async findById(id: string): Promise<any> {
+    const plan = await prisma.electricalPlan.findUnique({
+      where: { id },
+      include: {
+        author: true,
+        revisions: { orderBy: { createdAt: 'desc' } },
+        comments: { include: { user: true }, orderBy: { createdAt: 'asc' } },
+      },
+    });
     if (!plan) {
       throw new AppError(`Plano con id "${id}" no encontrado`, 404);
     }
-    return plan;
+    return mapPlan(plan);
   },
 
-  /**
-   * Crea un nuevo plano. Requiere attraction_id y title.
-   * @param data  — datos del formulario
-   * @param file  — archivo subido (multer)
-   * @param user  — usuario autenticado del token JWT
-   * @throws {AppError} 400 si faltan campos requeridos
-   */
-  create(
-    data: CreatePlanDto,
-    file?: Express.Multer.File,
-    user?: AuthUser,
-  ): ElectricalPlan {
+  async create(data: CreatePlanDto, file?: Express.Multer.File, user?: AuthUser): Promise<any> {
     if (!data.attraction_id || !data.title) {
       throw new AppError('attraction_id y title son obligatorios', 400);
     }
 
-    const now = new Date().toISOString();
+    const plan = await prisma.electricalPlan.create({
+      data: {
+        attractionId: data.attraction_id,
+        planNumber: data.plan_number ?? `PL-${Date.now()}`,
+        title: data.title,
+        type: (data.type as any) ?? 'single_line',
+        status: 'draft',
+        currentVersion: 'Rev. 0',
+        authorId: user?.id,
+        fileUrl: file ? `/uploads/${file.filename}` : '',
+        fileSizeKb: file ? Math.round(file.size / 1024) : 0,
+        pages: 1,
+        tags: [],
+        description: data.description ?? '',
+      },
+      include: {
+        author: true,
+        revisions: true,
+        comments: true,
+      },
+    });
 
-    const plan: ElectricalPlan = {
-      id: `p-${Date.now()}`,
-      attraction_id: data.attraction_id,
-      plan_number: data.plan_number ?? `PL-${Date.now()}`,
-      title: data.title,
-      type: data.type ?? 'single_line',
-      status: 'draft',
-      current_version: 'Rev. 0',
-      author: user?.email ?? data.author ?? 'Sistema',
-      file_url: file ? `/uploads/${file.filename}` : '',
-      file_size_kb: file ? Math.round(file.size / 1024) : 0,
-      pages: 1,
-      tags: [],
-      description: data.description ?? '',
-      revisions: [],
-      comments: [],
-      created_date: now,
-      updated_date: now,
-    };
-
-    plans.unshift(plan);
-    return plan;
+    return mapPlan(plan);
   },
 
-  /**
-   * Actualiza un plano existente.
-   * @throws {AppError} 404 si no se encuentra
-   */
-  update(id: string, data: UpdatePlanDto): ElectricalPlan {
-    const index = plans.findIndex(item => item.id === id);
-    if (index === -1) {
+  async update(id: string, data: UpdatePlanDto): Promise<any> {
+    const existing = await prisma.electricalPlan.findUnique({ where: { id } });
+    if (!existing) {
       throw new AppError(`Plano con id "${id}" no encontrado`, 404);
     }
 
-    const updated: ElectricalPlan = {
-      ...plans[index],
-      ...data,
-      id: plans[index].id,
-      updated_date: new Date().toISOString(),
-    };
+    const updated = await prisma.electricalPlan.update({
+      where: { id },
+      data: {
+        title: data.title ?? undefined,
+        type: data.type ? (data.type as any) : undefined,
+        status: data.status ? (data.status as any) : undefined,
+        description: data.description ?? undefined,
+        planNumber: data.plan_number ?? undefined,
+        currentVersion: data.current_version ?? undefined,
+        fileUrl: data.file_url ?? undefined,
+      },
+      include: {
+        author: true,
+        revisions: true,
+        comments: { include: { user: true } },
+      },
+    });
 
-    plans[index] = updated;
-    return updated;
+    return mapPlan(updated);
   },
 
-  /**
-   * Elimina un plano por ID.
-   * @throws {AppError} 404 si no se encuentra
-   */
-  remove(id: string): ElectricalPlan {
-    const index = plans.findIndex(item => item.id === id);
-    if (index === -1) {
+  async remove(id: string): Promise<any> {
+    try {
+      const deleted = await prisma.electricalPlan.delete({
+        where: { id },
+        include: { author: true, revisions: true, comments: { include: { user: true } } },
+      });
+      return mapPlan(deleted);
+    } catch (e: any) {
       throw new AppError(`Plano con id "${id}" no encontrado`, 404);
     }
+  },
 
-    const [deleted] = plans.splice(index, 1);
-    return deleted;
+  async addComment(planId: string, content: string, user?: AuthUser, pageRef?: number): Promise<any> {
+    const existing = await prisma.electricalPlan.findUnique({ where: { id: planId } });
+    if (!existing) throw new AppError(`Plano con id "${planId}" no encontrado`, 404);
+
+    await prisma.comment.create({
+      data: {
+        planId,
+        userId: user?.id ?? '',
+        content,
+        pageRef,
+      },
+    });
+
+    return this.findById(planId);
+  },
+
+  async resolveComment(planId: string, commentId: string): Promise<any> {
+    try {
+      await prisma.comment.update({
+        where: { id: commentId, planId },
+        data: { resolved: true },
+      });
+      return this.findById(planId);
+    } catch (e: any) {
+      throw new AppError(`Comentario con id "${commentId}" no encontrado`, 404);
+    }
+  },
+
+  async deleteComment(planId: string, commentId: string): Promise<any> {
+    try {
+      await prisma.comment.delete({
+        where: { id: commentId, planId },
+      });
+      return this.findById(planId);
+    } catch (e: any) {
+      throw new AppError(`Comentario con id "${commentId}" no encontrado`, 404);
+    }
   },
 };
