@@ -9,6 +9,7 @@ import { attractionRouter } from './routes/attractions.routes.js';
 import { planRouter } from './routes/plans.routes.js';
 import { userRouter } from './routes/users.routes.js';
 import { maintenanceRouter } from './routes/maintenance.routes.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 export const app = express();
 
@@ -21,16 +22,22 @@ app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use('/uploads', express.static(path.resolve(env.uploadDir)));
 app.use('/sample-plans', express.static(path.resolve('sample-plans')));
 
+// ─── Rutas de salud ───────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'parque-cafe-planimetria-backend' });
 });
 
+// ─── Rutas de la API ──────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
 app.use('/api/attractions', attractionRouter);
 app.use('/api/plans', planRouter);
 app.use('/api/users', userRouter);
 app.use('/api/maintenance', maintenanceRouter);
 
+// ─── Ruta no encontrada ───────────────────────────────────────────────────────
 app.use((_req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: 'Ruta no encontrada' });
 });
+
+// ─── Manejador global de errores (debe ser el último middleware) ──────────────
+app.use(errorHandler);

@@ -1,28 +1,23 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt, { SignOptions } from 'jsonwebtoken';
-import { env } from '../config/env.js';
-import { demoUsers } from '../data/mockData.js';
+import { NextFunction, Request, Response } from 'express';
+import { AuthService } from '../services/auth.service.js';
 
-export async function login(req: Request, res: Response) {
-  const { email, password } = req.body as { email?: string; password?: string };
+/**
+ * Controlador de Autenticación.
+ *
+ * Responsabilidad única: manejar la capa HTTP.
+ * Toda la lógica de validación y JWT vive en AuthService.
+ */
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+export async function login(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { email, password } = req.body as { email?: string; password?: string };
+    const result = AuthService.login(email, password);
+    res.json(result);
+  } catch (err) {
+    next(err);
   }
-
-  const user = demoUsers.find(item => item.email === email && item.active);
-  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
-  const signOptions: SignOptions = { expiresIn: env.jwtExpiresIn as SignOptions['expiresIn'] };
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, env.jwtSecret, signOptions);
-
-  const { passwordHash, ...safeUser } = user;
-  return res.json({ token, user: safeUser });
 }
 
 export function me(req: Request, res: Response) {
-  return res.json({ user: req.user });
+  res.json({ user: req.user });
 }

@@ -1,22 +1,19 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import { MaintenanceService } from '../services/maintenance.service.js';
 
-const demoMaintenance = [
-  {
-    id: 'mnt1',
-    attraction_id: 'a1',
-    type: 'preventive',
-    status: 'completed',
-    date: '2026-06-10',
-    technician: 'Luis Castano',
-    description: 'Monthly electrical inspection and VFD parameter review.',
-  },
-];
+/**
+ * Controlador de Mantenimiento.
+ *
+ * Responsabilidad única: manejar la capa HTTP.
+ * Toda la lógica vive en MaintenanceService.
+ */
 
-export function listMaintenance(req: Request, res: Response) {
-  const attractionId = req.query.attraction_id;
-  const data = attractionId
-    ? demoMaintenance.filter(item => item.attraction_id === attractionId)
-    : demoMaintenance;
-
-  res.json({ data });
+export function listMaintenance(req: Request, res: Response, next: NextFunction) {
+  try {
+    const attractionId = req.query.attraction_id as string | undefined;
+    const data = MaintenanceService.findAll(attractionId);
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
 }
