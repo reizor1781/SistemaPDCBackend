@@ -9,6 +9,7 @@ import { attractionRouter } from './routes/attractions.routes.js';
 import { planRouter } from './routes/plans.routes.js';
 import { userRouter } from './routes/users.routes.js';
 import { maintenanceRouter } from './routes/maintenance.routes.js';
+import { manualRouter } from './routes/manuals.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 export const app = express();
@@ -31,6 +32,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/attractions', attractionRouter);
 app.use('/api/plans', planRouter);
+app.use('/api/manuals', manualRouter);
 app.use('/api/users', userRouter);
 app.use('/api/maintenance', maintenanceRouter);
 

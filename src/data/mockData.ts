@@ -83,3 +83,32 @@ export const demoPlans = [
     file_url: '/sample-plans/sample.pdf',
   },
 ];
+
+export const demoManuals = [
+  {
+    id: 'm1',
+    attraction_id: 'a1',
+    manual_number: 'MR-MAN-001',
+    title: 'Manual de Operacion - Montana Rusa',
+    category: 'operation',
+    status: 'active',
+    current_version: 'Rev. A',
+    file_url: '/sample-plans/sample.pdf',
+    pages: 12,
+    file_size_kb: 1024,
+    description: 'Procedimientos operativos generales de la atraccion.',
+  },
+  {
+    id: 'm2',
+    attraction_id: 'a3',
+    manual_number: 'RR-MAN-001',
+    title: 'Manual de Mantenimiento - Rapidos del Rio',
+    category: 'maintenance',
+    status: 'active',
+    current_version: 'Rev. A',
+    file_url: '/sample-plans/sample.pdf',
+    pages: 18,
+    file_size_kb: 1024,
+    description: 'Rutinas de mantenimiento preventivo y correctivo.',
+  },
+];

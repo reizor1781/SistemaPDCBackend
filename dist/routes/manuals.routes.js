@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { deleteManual, getManual, listManuals, updateManual, uploadManual } from '../controllers/manuals.controller.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { pdfUpload } from '../middleware/upload.js';
+export const manualRouter = Router();
+manualRouter.get('/', requireAuth, listManuals);
+manualRouter.get('/:id', requireAuth, getManual);
+manualRouter.post('/', requireAuth, requireRole('admin', 'engineer'), pdfUpload.single('file'), uploadManual);
+manualRouter.put('/:id', requireAuth, requireRole('admin', 'engineer'), updateManual);
+manualRouter.delete('/:id', requireAuth, requireRole('admin', 'engineer'), deleteManual);

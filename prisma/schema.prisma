@@ -41,6 +41,18 @@ enum PlanStatus {
   obsolete
 }
 
+enum ManualCategory {
+  operation
+  maintenance
+}
+
+enum ManualStatus {
+  active
+  draft
+  review
+  obsolete
+}
+
 enum MaintenanceType {
   preventive
   corrective
@@ -98,6 +110,7 @@ model Attraction {
   updatedAt       DateTime         @updatedAt
 
   plans       ElectricalPlan[]
+  manuals     AttractionManual[]
   maintenance MaintenanceRecord[]
 }
 
@@ -137,6 +150,26 @@ model PlanRevision {
   createdAt   DateTime @default(now())
 
   plan ElectricalPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model AttractionManual {
+  id             String         @id @default(cuid())
+  attractionId   String
+  manualNumber   String         @unique
+  title          String
+  category       ManualCategory @default(operation)
+  status         ManualStatus   @default(active)
+  currentVersion String
+  author         String?
+  fileUrl        String
+  fileSizeKb     Int
+  pages          Int            @default(1)
+  tags           String[]
+  description    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  attraction Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
 }
 
 model Comment {

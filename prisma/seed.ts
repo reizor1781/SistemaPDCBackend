@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { demoAttractions, demoPlans, demoUsers } from '../src/data/mockData.js';
+import { demoAttractions, demoManuals, demoPlans, demoUsers } from '../src/data/mockData.js';
 
 const prisma = new PrismaClient();
 
@@ -12,6 +12,17 @@ const totalPlansByAttractionCode: Record<string, number> = {
   'TM-001': 10,
   'SV-001': 7,
   'SA-001': 9,
+};
+
+const totalManualsByAttractionCode: Record<string, number> = {
+  'MR-001': 4,
+  'TC-001': 3,
+  'RR-001': 5,
+  'CC-001': 2,
+  'TF-001': 4,
+  'TM-001': 3,
+  'SV-001': 2,
+  'SA-001': 3,
 };
 
 async function main() {
@@ -49,6 +60,7 @@ async function main() {
   for (const attraction of demoAttractions) {
     const technicalSpecs = {
       total_plans: totalPlansByAttractionCode[attraction.code] ?? 0,
+      total_manuals: totalManualsByAttractionCode[attraction.code] ?? 0,
     };
 
     await prisma.attraction.upsert({
@@ -109,6 +121,37 @@ async function main() {
   }
 
   console.log('Plans seeded');
+
+  for (const manual of demoManuals) {
+    await prisma.attractionManual.upsert({
+      where: { manualNumber: manual.manual_number },
+      update: {
+        title: manual.title,
+        category: manual.category as any,
+        status: manual.status as any,
+        currentVersion: manual.current_version,
+        fileUrl: manual.file_url,
+        description: manual.description || '',
+      },
+      create: {
+        id: manual.id,
+        attractionId: manual.attraction_id,
+        manualNumber: manual.manual_number,
+        title: manual.title,
+        category: manual.category as any,
+        status: manual.status as any,
+        currentVersion: manual.current_version,
+        author: 'Sistema',
+        fileUrl: manual.file_url,
+        fileSizeKb: manual.file_size_kb || 1024,
+        pages: manual.pages || 1,
+        tags: [],
+        description: manual.description || '',
+      },
+    });
+  }
+
+  console.log('Manuals seeded');
   console.log('Seeding finished.');
 }
 

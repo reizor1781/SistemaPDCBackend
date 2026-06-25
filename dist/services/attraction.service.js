@@ -14,17 +14,22 @@ function parseTechnicalSpecs(value) {
     }
     return typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
-function normalizeTechnicalSpecs(value, totalPlans) {
+function normalizeTechnicalSpecs(value, totalPlans, totalManuals) {
     const specs = parseTechnicalSpecs(value);
     if (totalPlans !== undefined) {
         specs.total_plans = Math.max(0, Number(totalPlans) || 0);
+    }
+    if (totalManuals !== undefined) {
+        specs.total_manuals = Math.max(0, Number(totalManuals) || 0);
     }
     return specs;
 }
 function mapAttraction(attraction) {
     const technicalSpecs = parseTechnicalSpecs(attraction.technicalSpecs);
     const totalPlans = Math.max(0, Number(technicalSpecs.total_plans ?? 0) || 0);
+    const totalManuals = Math.max(0, Number(technicalSpecs.total_manuals ?? 0) || 0);
     const uploadedPlans = attraction._count?.plans ?? 0;
+    const uploadedManuals = attraction._count?.manuals ?? 0;
     return {
         id: attraction.id,
         name: attraction.name,
@@ -46,7 +51,10 @@ function mapAttraction(attraction) {
         protection_ip: attraction.protectionIp || '',
         technical_specs: technicalSpecs,
         total_plans: totalPlans,
-        pending_docs: Math.max(totalPlans - uploadedPlans, 0),
+        total_manuals: totalManuals,
+        pending_docs: Math.max((totalPlans + totalManuals) - (uploadedPlans + uploadedManuals), 0),
+        pending_plans: Math.max(totalPlans - uploadedPlans, 0),
+        pending_manuals: Math.max(totalManuals - uploadedManuals, 0),
         last_maintenance: attraction.lastMaintenance ? attraction.lastMaintenance.toISOString().slice(0, 10) : undefined,
         next_maintenance: attraction.nextMaintenance ? attraction.nextMaintenance.toISOString().slice(0, 10) : undefined,
         created_at: attraction.createdAt ? attraction.createdAt.toISOString() : undefined,
@@ -57,14 +65,14 @@ export const AttractionService = {
     async findAll() {
         const attractions = await prisma.attraction.findMany({
             orderBy: { name: 'asc' },
-            include: { _count: { select: { plans: true } } },
+            include: { _count: { select: { plans: true, manuals: true } } },
         });
         return attractions.map(mapAttraction);
     },
     async findById(id) {
         const attraction = await prisma.attraction.findUnique({
             where: { id },
-            include: { _count: { select: { plans: true } } },
+            include: { _count: { select: { plans: true, manuals: true } } },
         });
         if (!attraction) {
             throw new AppError(`Atracción con id "${id}" no encontrada`, 404);
@@ -81,7 +89,7 @@ export const AttractionService = {
             throw new AppError(`El código de atracción "${code}" ya existe`, 409);
         }
         const imageUrl = file ? `/uploads/${file.filename}` : (data.image ?? '');
-        const technicalSpecs = normalizeTechnicalSpecs(data.technical_specs, data.total_plans);
+        const technicalSpecs = normalizeTechnicalSpecs(data.technical_specs, data.total_plans, data.total_manuals);
         const attraction = await prisma.attraction.create({
             data: {
                 name,
@@ -95,7 +103,7 @@ export const AttractionService = {
                 durationMin: Number(data.duration_min ?? 0),
                 technicalSpecs: technicalSpecs,
             },
-            include: { _count: { select: { plans: true } } },
+            include: { _count: { select: { plans: true, manuals: true } } },
         });
         return mapAttraction(attraction);
     },
@@ -105,8 +113,8 @@ export const AttractionService = {
             throw new AppError(`Atracción con id "${id}" no encontrada`, 404);
         }
         const imageUrl = file ? `/uploads/${file.filename}` : data.image;
-        const technicalSpecs = data.technical_specs !== undefined || data.total_plans !== undefined
-            ? normalizeTechnicalSpecs(data.technical_specs ?? existing.technicalSpecs, data.total_plans)
+        const technicalSpecs = data.technical_specs !== undefined || data.total_plans !== undefined || data.total_manuals !== undefined
+            ? normalizeTechnicalSpecs(data.technical_specs ?? existing.technicalSpecs, data.total_plans, data.total_manuals)
             : undefined;
         const updated = await prisma.attraction.update({
             where: { id },
@@ -122,7 +130,7 @@ export const AttractionService = {
                 durationMin: data.duration_min !== undefined ? Number(data.duration_min) : undefined,
                 technicalSpecs: technicalSpecs !== undefined ? technicalSpecs : undefined,
             },
-            include: { _count: { select: { plans: true } } },
+            include: { _count: { select: { plans: true, manuals: true } } },
         });
         return mapAttraction(updated);
     },
@@ -130,7 +138,7 @@ export const AttractionService = {
         try {
             const deleted = await prisma.attraction.delete({
                 where: { id },
-                include: { _count: { select: { plans: true } } },
+                include: { _count: { select: { plans: true, manuals: true } } },
             });
             return mapAttraction(deleted);
         }
