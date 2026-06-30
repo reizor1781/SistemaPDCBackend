@@ -11,7 +11,7 @@
     "prisma:migrate": "node node_modules/prisma/build/index.js migrate dev",
     "prisma:studio": "node node_modules/prisma/build/index.js studio",
     "db:push": "node node_modules/prisma/build/index.js db push --skip-generate",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "node node_modules/tsx/dist/cli.mjs prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
