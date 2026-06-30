@@ -28,6 +28,14 @@ const totalManualsByAttractionCode: Record<string, number> = {
 async function main() {
   console.log('Start seeding...');
 
+  const userCount = await prisma.user.count();
+  const attractionCount = await prisma.attraction.count();
+
+  if (userCount > 0 || attractionCount > 0) {
+    console.log('Database already contains data. Skipping seed.');
+    return;
+  }
+
   let adminId = '';
 
   for (const user of demoUsers) {
