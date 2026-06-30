@@ -1,5 +1,6 @@
 import { AppError } from '../types/errors.js';
 import { prisma } from '../lib/prisma.js';
+import { deleteFromCloudinary, extractPublicId } from '../config/cloudinary.js';
 function parseTechnicalSpecs(value) {
     if (!value)
         return {};
@@ -88,7 +89,7 @@ export const AttractionService = {
         if (existing) {
             throw new AppError(`El código de atracción "${code}" ya existe`, 409);
         }
-        const imageUrl = file ? `/uploads/${file.filename}` : (data.image ?? '');
+        const imageUrl = file ? file.path : (data.image ?? '');
         const technicalSpecs = normalizeTechnicalSpecs(data.technical_specs, data.total_plans, data.total_manuals);
         const attraction = await prisma.attraction.create({
             data: {
@@ -112,7 +113,7 @@ export const AttractionService = {
         if (!existing) {
             throw new AppError(`Atracción con id "${id}" no encontrada`, 404);
         }
-        const imageUrl = file ? `/uploads/${file.filename}` : data.image;
+        const imageUrl = file ? file.path : data.image;
         const technicalSpecs = data.technical_specs !== undefined || data.total_plans !== undefined || data.total_manuals !== undefined
             ? normalizeTechnicalSpecs(data.technical_specs ?? existing.technicalSpecs, data.total_plans, data.total_manuals)
             : undefined;
@@ -140,6 +141,12 @@ export const AttractionService = {
                 where: { id },
                 include: { _count: { select: { plans: true, manuals: true } } },
             });
+            // Eliminar imagen de Cloudinary
+            if (deleted.image) {
+                const publicId = extractPublicId(deleted.image);
+                if (publicId)
+                    await deleteFromCloudinary(publicId, 'image');
+            }
             return mapAttraction(deleted);
         }
         catch (e) {

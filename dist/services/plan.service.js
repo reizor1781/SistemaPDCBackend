@@ -1,5 +1,6 @@
 import { AppError } from '../types/errors.js';
 import { prisma } from '../lib/prisma.js';
+import { deleteFromCloudinary, extractPublicId } from '../config/cloudinary.js';
 function mapPlan(plan) {
     return {
         id: plan.id,
@@ -73,7 +74,7 @@ export const PlanService = {
                 status: 'draft',
                 currentVersion: 'Rev. 0',
                 authorId: user?.id,
-                fileUrl: file ? `/uploads/${file.filename}` : '',
+                fileUrl: file ? file.path : '',
                 fileSizeKb: file ? Math.round(file.size / 1024) : 0,
                 pages: 1,
                 tags: [],
@@ -117,6 +118,10 @@ export const PlanService = {
                 where: { id },
                 include: { author: true, revisions: true, comments: { include: { user: true } } },
             });
+            // Eliminar archivo de Cloudinary
+            const publicId = extractPublicId(deleted.fileUrl);
+            if (publicId)
+                await deleteFromCloudinary(publicId, 'raw');
             return mapPlan(deleted);
         }
         catch (e) {

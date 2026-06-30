@@ -14,7 +14,7 @@ export async function listUsers(_req: Request, res: Response, next: NextFunction
 export async function createUser(req: Request, res: Response, next: NextFunction) {
   try {
     const dto = req.body as CreateUserDto;
-    if (req.file) dto.avatar = `/uploads/${req.file.filename}`;
+    if (req.file) dto.avatar = (req.file as any).path;
     const data = await UserService.create(dto);
     res.status(201).json({ data });
   } catch (err) {
@@ -25,7 +25,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
 export async function updateUser(req: Request, res: Response, next: NextFunction) {
   try {
     const dto = req.body as UpdateUserDto;
-    if (req.file) dto.avatar = `/uploads/${req.file.filename}`;
+    if (req.file) dto.avatar = (req.file as any).path;
     const data = await UserService.update(req.params['id'] as string, dto);
     res.json({ data });
   } catch (err) {

@@ -30,7 +30,7 @@ export async function updateMe(req: Request, res: Response, next: NextFunction) 
   try {
     if (!req.user?.id) return res.status(401).json({ error: 'No autenticado' });
     const { name, password } = req.body as { name?: string; password?: string };
-    const avatarUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+    const avatarUrl = req.file ? (req.file as any).path : undefined;
     const updated = await UserService.updateProfile(req.user.id, { name, password, avatar: avatarUrl });
     res.json({ user: updated });
   } catch (err) {

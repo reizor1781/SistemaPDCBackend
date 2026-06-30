@@ -1,5 +1,6 @@
 import { AppError } from '../types/errors.js';
 import { prisma } from '../lib/prisma.js';
+import { deleteFromCloudinary, extractPublicId } from '../config/cloudinary.js';
 function mapManual(manual) {
     return {
         id: manual.id,
@@ -43,11 +44,11 @@ export const ManualService = {
                 attractionId: data.attraction_id,
                 manualNumber: data.manual_number ?? `MAN-${Date.now()}`,
                 title: data.title,
-                category: data.category ?? 'technical',
+                category: data.category ?? 'operation',
                 status: data.status ?? 'active',
                 currentVersion: data.current_version ?? 'Rev. 0',
                 author: data.author ?? 'Sistema',
-                fileUrl: file ? `/uploads/${file.filename}` : '',
+                fileUrl: file ? file.path : '',
                 fileSizeKb: file ? Math.round(file.size / 1024) : 0,
                 pages: 1,
                 tags: [],
@@ -82,6 +83,10 @@ export const ManualService = {
     async remove(id) {
         try {
             const deleted = await prisma.attractionManual.delete({ where: { id } });
+            // Eliminar archivo de Cloudinary
+            const publicId = extractPublicId(deleted.fileUrl);
+            if (publicId)
+                await deleteFromCloudinary(publicId, 'raw');
             return mapManual(deleted);
         }
         catch (e) {

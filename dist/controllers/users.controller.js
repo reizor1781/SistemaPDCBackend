@@ -12,7 +12,7 @@ export async function createUser(req, res, next) {
     try {
         const dto = req.body;
         if (req.file)
-            dto.avatar = `/uploads/${req.file.filename}`;
+            dto.avatar = req.file.path;
         const data = await UserService.create(dto);
         res.status(201).json({ data });
     }
@@ -24,7 +24,7 @@ export async function updateUser(req, res, next) {
     try {
         const dto = req.body;
         if (req.file)
-            dto.avatar = `/uploads/${req.file.filename}`;
+            dto.avatar = req.file.path;
         const data = await UserService.update(req.params['id'], dto);
         res.json({ data });
     }

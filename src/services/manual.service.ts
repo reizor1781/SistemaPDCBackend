@@ -1,6 +1,7 @@
 import { CreateManualDto, UpdateManualDto } from '../models/manual.model.js';
 import { AppError } from '../types/errors.js';
 import { prisma } from '../lib/prisma.js';
+import { deleteFromCloudinary, extractPublicId } from '../config/cloudinary.js';
 
 function mapManual(manual: any): any {
   return {
@@ -53,7 +54,7 @@ export const ManualService = {
         status: (data.status as any) ?? 'active',
         currentVersion: data.current_version ?? 'Rev. 0',
         author: data.author ?? 'Sistema',
-        fileUrl: file ? `/uploads/${file.filename}` : '',
+        fileUrl: file ? (file as any).path : '',
         fileSizeKb: file ? Math.round(file.size / 1024) : 0,
         pages: 1,
         tags: [],
@@ -93,6 +94,9 @@ export const ManualService = {
   async remove(id: string): Promise<any> {
     try {
       const deleted = await prisma.attractionManual.delete({ where: { id } });
+      // Eliminar archivo de Cloudinary
+      const publicId = extractPublicId(deleted.fileUrl);
+      if (publicId) await deleteFromCloudinary(publicId, 'raw');
       return mapManual(deleted);
     } catch (e: any) {
       throw new AppError(`Manual con id "${id}" no encontrado`, 404);

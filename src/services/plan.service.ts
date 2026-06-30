@@ -2,6 +2,7 @@ import { CreatePlanDto, UpdatePlanDto } from '../models/plan.model.js';
 import { AppError } from '../types/errors.js';
 import { AuthUser } from '../types/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { deleteFromCloudinary, extractPublicId } from '../config/cloudinary.js';
 
 function mapPlan(plan: any): any {
   return {
@@ -80,7 +81,7 @@ export const PlanService = {
         status: 'draft',
         currentVersion: 'Rev. 0',
         authorId: user?.id,
-        fileUrl: file ? `/uploads/${file.filename}` : '',
+        fileUrl: file ? (file as any).path : '',
         fileSizeKb: file ? Math.round(file.size / 1024) : 0,
         pages: 1,
         tags: [],
@@ -129,6 +130,9 @@ export const PlanService = {
         where: { id },
         include: { author: true, revisions: true, comments: { include: { user: true } } },
       });
+      // Eliminar archivo de Cloudinary
+      const publicId = extractPublicId(deleted.fileUrl);
+      if (publicId) await deleteFromCloudinary(publicId, 'raw');
       return mapPlan(deleted);
     } catch (e: any) {
       throw new AppError(`Plano con id "${id}" no encontrado`, 404);
